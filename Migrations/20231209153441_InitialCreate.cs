@@ -67,11 +67,11 @@ namespace HabitHub_Backend.Migrations
                 columns: table => new
                 {
                     HabitListId = table.Column<int>(type: "integer", nullable: false),
-                    TagListId = table.Column<int>(type: "integer", nullable: false)
+                    TagsId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_HabitTag", x => new { x.HabitListId, x.TagListId });
+                    table.PrimaryKey("PK_HabitTag", x => new { x.HabitListId, x.TagsId });
                     table.ForeignKey(
                         name: "FK_HabitTag_Habits_HabitListId",
                         column: x => x.HabitListId,
@@ -79,8 +79,8 @@ namespace HabitHub_Backend.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_HabitTag_Tags_TagListId",
-                        column: x => x.TagListId,
+                        name: "FK_HabitTag_Tags_TagsId",
+                        column: x => x.TagsId,
                         principalTable: "Tags",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -121,9 +121,9 @@ namespace HabitHub_Backend.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_HabitTag_TagListId",
+                name: "IX_HabitTag_TagsId",
                 table: "HabitTag",
-                column: "TagListId");
+                column: "TagsId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

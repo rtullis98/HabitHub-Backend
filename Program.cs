@@ -5,21 +5,21 @@ using Microsoft.AspNetCore.Http.Json;
 using HabitHub_Backend;
 using System.Security.Cryptography;
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
+//ADD CORS
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(
-                      policy =>
-                      {
-                          policy.WithOrigins("https://localhost:7285",
-                                              "http://localhost:3000")
-                                               .AllowAnyHeader()
-                                               .AllowAnyMethod();
-                      });
+    options.AddPolicy(MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000",
+                                "http://localhost:7285")
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+        });
 });
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -40,6 +40,8 @@ builder.Services.Configure<JsonOptions>(options =>
 
 var app = builder.Build();
 
+app.UseCors();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -48,6 +50,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthorization();
 
@@ -90,18 +94,16 @@ app.MapPut("/users/update/{userId}", (HabitHubDbContext db, int userId, User New
 });
 
 // Check User
-app.MapGet("/users/{uid}", (HabitHubDbContext db, string uid) =>
+app.MapMethods("/api/checkuser/{uid}", new[] { "GET", "OPTIONS" }, (HabitHubDbContext db, string uid) =>
 {
-    var user = db.Users.Where(x => x.Uid == uid).ToList();
-    if (uid == null)
+    var userExists = db.Users.Where(x => x.Uid == uid).FirstOrDefault();
+    if (userExists == null)
     {
-        return Results.NotFound("Sorry, User not found!");
+        return Results.StatusCode(204);
     }
-    else
-    {
-        return Results.Ok(user);
-    }
+    return Results.Ok(userExists);
 });
+
 
 // Get User by Id
 app.MapGet("/users/return/{iden}", (HabitHubDbContext db, int iden) =>
@@ -159,6 +161,7 @@ app.MapPut("/habits/{HabId}/update", (HabitHubDbContext db, int HabId, Habit pay
     SelectedHabit.Title = payload.Title;
     SelectedHabit.Description = payload.Description;
     SelectedHabit.ImageUrl = payload.ImageUrl;
+    SelectedHabit.UserId = payload.UserId;
 
     db.SaveChanges();
     return Results.Ok("The existing Habit has been updated.");
@@ -177,79 +180,82 @@ app.MapDelete("/habits/{HabId}/remove", (HabitHubDbContext db, int HabId) => {
 });
 
 
-// View All Tags
-app.MapGet("/tags", (HabitHubDbContext db) => {
+// Get All Tags
+app.MapGet("/api/tags", (HabitHubDbContext db) =>
+{
 
     return db.Tags.ToList();
 
 });
 
-// Add a Tag to a Habit
-app.MapPost("/habits/{HabId}/tags/new", (HabitHubDbContext db, int HabId, int tId) =>
+//Create a Tag
+app.MapPost("/api/tag", (HabitHubDbContext db, Tag tag) =>
 {
-    // Retrieve object reference of Habits in order to manipulate (Not a query result)
-    var hab = db.Habits
-    .Where(o => o.Id == HabId)
-    .Include(o => o.TagList)
-    .FirstOrDefault();
-
-    var SelectedTag = db.Tags
-    .Where(db => db.Id == tId)
-    .FirstOrDefault();
-
-    if (hab == null)
-    {
-        return Results.NotFound("Habit not found.");
-    }
-    hab.TagList.Add(SelectedTag);
+    db.Tags.Add(tag);
     db.SaveChanges();
-    return Results.Ok(hab);
+    return Results.Created($"/api/tag", tag);
 });
 
-// Delete Tags from a Habit
-app.MapDelete("/habits/{HabId}/tags/{TagId}/remove", (HabitHubDbContext db, int HabId, int TagId) =>
+//Add a Tag to a Habit
+app.MapPost("/api/habit/taghabit/{HabId}/{tagId}", (HabitHubDbContext db, int HabId, int tagId) =>
 {
-    try
+    var habit = db.Habits.SingleOrDefault(s => s.Id == HabId);
+    var tag = db.Tags.SingleOrDefault(g => g.Id == tagId);
+
+    if (habit.Tags == null)
     {
-        // Include should come first before selecting
-        var SingleHabit = db.Habits
-            .Include(Hab => Hab.TagList)
-            .FirstOrDefault(x => x.Id == HabId);
-        if (SingleHabit == null)
-        {
-            return Results.NotFound("Sorry for the inconvenience! This habit does not exist.");
-        }
-        // The reason why it didn't work before is because I didnt have a method after TagList
-        var SelectedTagList = SingleHabit.TagList.FirstOrDefault(t => t.Id == TagId);
-        SingleHabit.TagList.Remove(SelectedTagList);
-        db.SaveChanges();
-        return Results.Ok(SingleHabit.TagList);
+        habit.Tags = new List<Tag>();
     }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
+    habit.Tags.Add(tag);
+    db.SaveChanges();
+    return habit;
+
 });
 
-// Get Tags from a Habit
-app.MapGet("/habits/{HabId}/tags", (HabitHubDbContext db, int HabId) =>
-{
-    try
-    {
-        var SingleHabit = db.Habits
-            .Where(db => db.Id == HabId)
-            .Include(Hab => Hab.TagList)
-            .ToList();
-        if (SingleHabit == null)
-        {
-            return Results.NotFound("Sorry for the inconvenience! This Habit does not exist.");
-        }
-        return Results.Ok(SingleHabit);
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.Message);
-    }
-});
+//// Delete Tags from a Habit
+//app.MapDelete("/habits/{HabId}/tags/{TagId}/remove", (HabitHubDbContext db, int HabId, int TagId) =>
+//{
+//    try
+//    {
+//        // Include should come first before selecting
+//        var SingleHabit = db.Habits
+//            .Include(Hab => Hab.TagList)
+//            .FirstOrDefault(x => x.Id == HabId);
+//        if (SingleHabit == null)
+//        {
+//            return Results.NotFound("Sorry for the inconvenience! This habit does not exist.");
+//        }
+//        // The reason why it didn't work before is because I didnt have a method after TagList
+//        var SelectedTagList = SingleHabit.TagList.FirstOrDefault(t => t.Id == TagId);
+//        SingleHabit.TagList.Remove(SelectedTagList);
+//        db.SaveChanges();
+//        return Results.Ok(SingleHabit.TagList);
+//    }
+//    catch (Exception ex)
+//    {
+//        return Results.Problem(ex.Message);
+//    }
+//});
 
-app.Run();
+//// Get Tags from a Habit
+//app.MapGet("/habits/{HabId}/tags", (HabitHubDbContext db, int HabId) =>
+//{
+//    try
+//    {
+//        var SingleHabit = db.Habits
+//            .Where(db => db.Id == HabId)
+//            .Include(Hab => Hab.TagList)
+//            .ToList();
+//        if (SingleHabit == null)
+//        {
+//            return Results.NotFound("Sorry for the inconvenience! This Habit does not exist.");
+//        }
+//        return Results.Ok(SingleHabit);
+//    }
+//    catch (Exception ex)
+//    {
+//        return Results.Problem(ex.Message);
+//    }
+//});
+
+//app.Run();

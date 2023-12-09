@@ -39,5 +39,9 @@ namespace HabitHub_Backend
 
            });
         }
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+ => optionsBuilder
+     .UseNpgsql();
     }
-};
+
+}

@@ -172,12 +172,12 @@ namespace HabitHub_Backend.Migrations
                     b.Property<int>("HabitListId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TagListId")
+                    b.Property<int>("TagsId")
                         .HasColumnType("integer");
 
-                    b.HasKey("HabitListId", "TagListId");
+                    b.HasKey("HabitListId", "TagsId");
 
-                    b.HasIndex("TagListId");
+                    b.HasIndex("TagsId");
 
                     b.ToTable("HabitTag");
                 });
@@ -201,7 +201,7 @@ namespace HabitHub_Backend.Migrations
 
                     b.HasOne("HabitHub_Backend.Models.Tag", null)
                         .WithMany()
-                        .HasForeignKey("TagListId")
+                        .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HabitHub_Backend.Migrations
 {
     [DbContext(typeof(HabitHubDbContext))]
-    [Migration("20231204161952_InitialCreate")]
+    [Migration("20231209153441_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -174,12 +174,12 @@ namespace HabitHub_Backend.Migrations
                     b.Property<int>("HabitListId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TagListId")
+                    b.Property<int>("TagsId")
                         .HasColumnType("integer");
 
-                    b.HasKey("HabitListId", "TagListId");
+                    b.HasKey("HabitListId", "TagsId");
 
-                    b.HasIndex("TagListId");
+                    b.HasIndex("TagsId");
 
                     b.ToTable("HabitTag");
                 });
@@ -203,7 +203,7 @@ namespace HabitHub_Backend.Migrations
 
                     b.HasOne("HabitHub_Backend.Models.Tag", null)
                         .WithMany()
-                        .HasForeignKey("TagListId")
+                        .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

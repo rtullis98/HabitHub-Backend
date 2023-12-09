@@ -16,7 +16,7 @@ namespace HabitHub_Backend.Models
 
         public int UserId { get; set; }
 
-        public List<Tag> TagList { get; set; }
+        public List<Tag> Tags { get; set; }
 
     }
 }
