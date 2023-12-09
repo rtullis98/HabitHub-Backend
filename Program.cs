@@ -124,6 +124,22 @@ app.MapGet("/user/{userId}/habits", (HabitHubDbContext db, int userId) => {
     return db.Habits.Where(x => x.UserId == userId);
 });
 
+app.MapGet("/api/singlehabitbyuser/{id}", async (HabitHubDbContext db, int id) =>
+{
+    var posts = await db.Habits
+        .Include(p => p.UserId)
+        .Include(p => p.Tags)
+        .Where(p => p.Id == id)
+        .ToListAsync();
+
+    if (posts == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok();
+});
+
 
 // View All Habits
 app.MapGet("/habits", (HabitHubDbContext db) => {
@@ -258,4 +274,4 @@ app.MapPost("/api/habit/taghabit/{HabId}/{tagId}", (HabitHubDbContext db, int Ha
 //    }
 //});
 
-//app.Run();
+app.Run();
