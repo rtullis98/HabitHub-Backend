@@ -124,21 +124,40 @@ app.MapGet("/user/{userId}/habits", (HabitHubDbContext db, int userId) => {
     return db.Habits.Where(x => x.UserId == userId);
 });
 
+// Get Single Habit By User
 app.MapGet("/api/singlehabitbyuser/{id}", async (HabitHubDbContext db, int id) =>
 {
-    var posts = await db.Habits
-        .Include(p => p.UserId)
-        .Include(p => p.Tags)
-        .Where(p => p.Id == id)
-        .ToListAsync();
-
-    if (posts == null)
+    try
     {
-        return Results.NotFound();
-    }
+        var habit = await db.Habits
+            .Include(h => h.Tags)  // Include Tags navigation property
+            .FirstOrDefaultAsync(h => h.Id == id);
 
-    return Results.Ok();
+        if (habit == null)
+        {
+            return Results.NotFound("Habit not found");
+        }
+
+        return Results.Ok(habit);
+    }
+    catch (Exception ex)
+    {
+        // Log the exception for debugging purposes
+        Console.WriteLine($"Error: {ex.Message}");
+
+        return Results.Problem("Internal Server Error", statusCode: 500);
+    }
 });
+
+
+
+
+
+
+
+
+
+
 
 
 // View All Habits
